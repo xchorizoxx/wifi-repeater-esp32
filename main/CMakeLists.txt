@@ -1,0 +1,14 @@
+idf_component_register(
+    SRCS
+        "main.cpp"
+        "src/StatusLed.cpp"
+        "src/WifiManager.cpp"
+        "src/WebServer.cpp"
+        "src/ConfigManager.cpp"
+        "src/ConnectionMonitor.cpp"
+        "src/NaptManager.cpp"
+        "src/OtaUpdater.cpp"
+    INCLUDE_DIRS
+        "."
+        "include"
+)

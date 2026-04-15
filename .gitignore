@@ -1,0 +1,21 @@
+# Build output
+build/
+managed_components/
+dependencies.lock
+*.bin
+*.elf
+*.map
+
+# IDE settings
+.vscode/
+.idea/
+*.swp
+*.bak
+
+# SDK configuration
+# Usually sdkconfig is ignored if you provide sdkconfig.defaults
+# sdkconfig
+sdkconfig.old
+
+# Internal review (not for public)
+REVIEW/

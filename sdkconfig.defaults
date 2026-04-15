@@ -1,0 +1,49 @@
+# ==============================================================================
+# WiFi Repeater – sdkconfig.defaults (ESP32-S3, 16 MB Flash)
+# ==============================================================================
+
+# --- Target ---
+CONFIG_IDF_TARGET="esp32s3"
+
+# --- Flash: 16 MB, 80 MHz, DIO ---
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+CONFIG_ESPTOOLPY_FLASHFREQ_80M=y
+CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
+
+# --- Partition Table: custom CSV ---
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+
+# --- LwIP: NAPT / IP Forwarding ---
+CONFIG_LWIP_IP_FORWARD=y
+CONFIG_LWIP_IPV4_NAPT=y
+CONFIG_LWIP_L2_TO_L3_COPY=y
+CONFIG_LWIP_MAX_NAT_PORTMAP=512
+CONFIG_LWIP_MAX_NAT_ENTRIES=512
+
+# --- LwIP: increase socket/connection limits for repeater use ---
+CONFIG_LWIP_MAX_SOCKETS=16
+CONFIG_LWIP_TCP_SND_BUF_DEFAULT=5744
+CONFIG_LWIP_TCP_WND_DEFAULT=5744
+CONFIG_LWIP_TCP_RECVMBOX_SIZE=12
+CONFIG_LWIP_UDP_RECVMBOX_SIZE=12
+
+# --- WiFi: enable STA + AP coexistence ---
+CONFIG_ESP_WIFI_SOFTAP_SUPPORT=y
+CONFIG_ESP_WIFI_NVS_ENABLED=y
+
+# --- HTTPD: enable web server ---
+CONFIG_HTTPD_MAX_REQ_HDR_LEN=1024
+CONFIG_HTTPD_MAX_URI_LEN=512
+
+# --- NVS ---
+CONFIG_NVS_ENCRYPTION=n
+
+# --- FreeRTOS ---
+CONFIG_FREERTOS_HZ=1000
+
+# --- Compiler: C++ support ---
+CONFIG_COMPILER_CXX_EXCEPTIONS=y
+
+# --- Memory: Disable PSRAM ---
+CONFIG_SPIRAM=n
