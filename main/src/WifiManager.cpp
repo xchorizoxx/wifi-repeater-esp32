@@ -121,8 +121,12 @@ void WifiManager::clearCredentials() {
 // WiFi scan
 // ---------------------------------------------------------------------------
 esp_err_t WifiManager::scanNetworks(wifi_ap_record_t *apRecords, uint16_t *count) {
-  bool wasConnecting = !m_staConnected.load(std::memory_order_relaxed);
-  if (wasConnecting) {
+  xEventGroupSetBits(m_eventGroup, WIFI_SCANNING_BIT);
+
+  std::string staSsid = ConfigManager::getInstance().getStaSsid();
+  bool shouldReconnect = !staSsid.empty() && !m_staConnected.load(std::memory_order_relaxed);
+  
+  if (shouldReconnect) {
     esp_wifi_disconnect();
     vTaskDelay(pdMS_TO_TICKS(100));
   }
@@ -137,8 +141,10 @@ esp_err_t WifiManager::scanNetworks(wifi_ap_record_t *apRecords, uint16_t *count
     err = esp_wifi_scan_get_ap_records(count, apRecords);
   }
 
-  // Resume reconnection if needed (Watchdog will also catch it, but we can fast-track)
-  if (wasConnecting) {
+  xEventGroupClearBits(m_eventGroup, WIFI_SCANNING_BIT);
+
+  // Resume reconnection if needed
+  if (shouldReconnect) {
     esp_wifi_connect();
   }
   return err;
@@ -218,10 +224,8 @@ void WifiManager::handleIpEvent(int32_t id, void *eventData) {
     m_led.setState(LedState::ACTIVE_GREEN);
 
     // Start traffic monitor if not already running
-    static bool trafficTaskRunning = false;
-    if (!trafficTaskRunning) {
-        xTaskCreate(trafficTaskWrapper, "traffic_mon", 3072, this, 2, nullptr);
-        trafficTaskRunning = true;
+    if (m_trafficTaskHandle == nullptr) {
+        xTaskCreate(trafficTaskWrapper, "traffic_mon", 3072, this, 2, &m_trafficTaskHandle);
     }
   }
 }

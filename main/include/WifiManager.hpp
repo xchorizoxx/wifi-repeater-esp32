@@ -17,7 +17,7 @@
  * @brief EventGroup bits for inter-task signalling.
  */
 constexpr EventBits_t WIFI_CONNECTED_BIT   = BIT1;
-constexpr EventBits_t WIFI_DISCONNECTED_BIT = BIT2;
+constexpr EventBits_t WIFI_SCANNING_BIT    = BIT2;
 
 /**
  * @brief Manages WiFi STA + AP coexistence, delegates NAPT to NaptManager,
@@ -78,6 +78,7 @@ private:
     // --- State ---
     std::atomic<bool>   m_staConnected{false};
     uint32_t            m_lastBytes = 0;
+    TaskHandle_t        m_trafficTaskHandle = nullptr;
 
     // --- Internal helpers ---
     void startAP();

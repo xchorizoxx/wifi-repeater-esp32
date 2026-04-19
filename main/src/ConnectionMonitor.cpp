@@ -2,6 +2,7 @@
 #include "esp_log.h"
 #include "esp_wifi.h"
 #include "ConfigManager.hpp"
+#include "WifiManager.hpp"
 #include <algorithm>
 
 ConnectionMonitor::ConnectionMonitor(EventGroupHandle_t eventGroup, 
@@ -51,6 +52,11 @@ void ConnectionMonitor::run() {
         }
 
         EventBits_t bits = xEventGroupGetBits(m_eventGroup);
+        if ((bits & WIFI_SCANNING_BIT) != 0) {
+            vTaskDelay(pdMS_TO_TICKS(1000));
+            continue;
+        }
+
         bool isConnected = (bits & m_connectedBit) != 0;
 
         if (isConnected) {

@@ -315,6 +315,10 @@ esp_err_t WebServer::postApplyHandlerWrapper(httpd_req_t* req) {
 esp_err_t WebServer::postApplyHandler(httpd_req_t* req) {
     // Read the POST body
     int total_len = req->content_len;
+    if (total_len > 1024) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Body too large");
+        return ESP_FAIL;
+    }
     int cur_len = 0;
     std::vector<char> buf(total_len + 1, '\0');
 

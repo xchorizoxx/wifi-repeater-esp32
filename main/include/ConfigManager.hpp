@@ -3,6 +3,8 @@
 #include "esp_err.h"
 #include <string>
 #include <cstdint>
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 
 /**
  * @brief Singleton class to handle all Non-Volatile Storage (NVS) 
@@ -23,15 +25,15 @@ public:
     // --- Accessors for RAM Cache ---
     
     // AP Configuration
-    std::string getApSsid() const { return m_apSsid; }
-    std::string getApPassword() const { return m_apPassword; }
+    std::string getApSsid() const { xSemaphoreTake(m_mutex, portMAX_DELAY); std::string ret = m_apSsid; xSemaphoreGive(m_mutex); return ret; }
+    std::string getApPassword() const { xSemaphoreTake(m_mutex, portMAX_DELAY); std::string ret = m_apPassword; xSemaphoreGive(m_mutex); return ret; }
     
     // STA Configuration
-    std::string getStaSsid() const { return m_staSsid; }
-    std::string getStaPassword() const { return m_staPassword; }
+    std::string getStaSsid() const { xSemaphoreTake(m_mutex, portMAX_DELAY); std::string ret = m_staSsid; xSemaphoreGive(m_mutex); return ret; }
+    std::string getStaPassword() const { xSemaphoreTake(m_mutex, portMAX_DELAY); std::string ret = m_staPassword; xSemaphoreGive(m_mutex); return ret; }
     
     // NAPT & Advanced Config
-    bool isNaptEnabled() const { return m_naptEnabled; }
+    bool isNaptEnabled() const { xSemaphoreTake(m_mutex, portMAX_DELAY); bool ret = m_naptEnabled; xSemaphoreGive(m_mutex); return ret; }
 
     // --- Setters (Updates RAM and writes to NVS) ---
     esp_err_t setApConfig(const std::string& ssid, const std::string& password);
@@ -39,8 +41,8 @@ public:
     esp_err_t setNaptEnabled(bool enabled);
 
 private:
-    ConfigManager() = default;
-    ~ConfigManager() = default;
+    ConfigManager() { m_mutex = xSemaphoreCreateMutex(); }
+    ~ConfigManager() { if (m_mutex) vSemaphoreDelete(m_mutex); }
 
     ConfigManager(const ConfigManager&) = delete;
     ConfigManager& operator=(const ConfigManager&) = delete;
@@ -52,6 +54,7 @@ private:
     static constexpr const char* NVS_NAMESPACE = "router_cfg";
 
     // Memory cached variables
+    mutable SemaphoreHandle_t m_mutex = nullptr;
     std::string m_apSsid;
     std::string m_apPassword;
     std::string m_staSsid;

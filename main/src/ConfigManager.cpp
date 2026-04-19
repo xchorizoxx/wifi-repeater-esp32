@@ -30,42 +30,60 @@ void ConfigManager::init() {
 }
 
 esp_err_t ConfigManager::setApConfig(const std::string& ssid, const std::string& password) {
+    xSemaphoreTake(m_mutex, portMAX_DELAY);
     if (ssid == m_apSsid && password == m_apPassword) {
+        xSemaphoreGive(m_mutex);
         return ESP_OK; // No change
     }
     
-    m_apSsid = ssid;
-    m_apPassword = password;
-
-    esp_err_t err = saveString("ap_ssid", m_apSsid);
-    if (err == ESP_OK) {
-        err = saveString("ap_pass", m_apPassword);
+    esp_err_t err1 = saveString("ap_ssid", ssid);
+    esp_err_t err2 = saveString("ap_pass", password);
+    esp_err_t err = ESP_FAIL;
+    
+    if (err1 == ESP_OK && err2 == ESP_OK) {
+        m_apSsid = ssid;
+        m_apPassword = password;
+        err = ESP_OK;
     }
+    
+    xSemaphoreGive(m_mutex);
     return err;
 }
 
 esp_err_t ConfigManager::setStaConfig(const std::string& ssid, const std::string& password) {
+    xSemaphoreTake(m_mutex, portMAX_DELAY);
     if (ssid == m_staSsid && password == m_staPassword) {
+        xSemaphoreGive(m_mutex);
         return ESP_OK; // No change
     }
 
-    m_staSsid = ssid;
-    m_staPassword = password;
-
-    esp_err_t err = saveString("sta_ssid", m_staSsid);
-    if (err == ESP_OK) {
-        err = saveString("sta_pass", m_staPassword);
+    esp_err_t err1 = saveString("sta_ssid", ssid);
+    esp_err_t err2 = saveString("sta_pass", password);
+    esp_err_t err = ESP_FAIL;
+    
+    if (err1 == ESP_OK && err2 == ESP_OK) {
+        m_staSsid = ssid;
+        m_staPassword = password;
+        err = ESP_OK;
     }
+    
+    xSemaphoreGive(m_mutex);
     return err;
 }
 
 esp_err_t ConfigManager::setNaptEnabled(bool enabled) {
+    xSemaphoreTake(m_mutex, portMAX_DELAY);
     if (enabled == m_naptEnabled) {
+        xSemaphoreGive(m_mutex);
         return ESP_OK;
     }
 
-    m_naptEnabled = enabled;
-    return saveBool("napt_en", m_naptEnabled);
+    esp_err_t err = saveBool("napt_en", enabled);
+    if (err == ESP_OK) {
+        m_naptEnabled = enabled;
+    }
+    xSemaphoreGive(m_mutex);
+    return err;
 }
 
 // ---------------------------------------------------------
@@ -82,11 +100,13 @@ esp_err_t ConfigManager::loadString(const char* key, std::string& outStr, const 
 
     size_t required_size = 0;
     err = nvs_get_str(handle, key, nullptr, &required_size);
-    if (err == ESP_OK && required_size > 0) {
-        char* buf = new char[required_size];
+    if (err == ESP_OK && required_size > 0 && required_size <= 64) {
+        char buf[64] = {};
         nvs_get_str(handle, key, buf, &required_size);
         outStr = std::string(buf);
-        delete[] buf;
+    } else if (err == ESP_OK && required_size > 64) {
+        ESP_LOGW(TAG, "Value for key %s too long (%d), using default", key, required_size);
+        outStr = defaultVal;
     } else {
         outStr = defaultVal;
     }
