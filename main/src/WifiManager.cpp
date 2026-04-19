@@ -46,6 +46,7 @@ void WifiManager::init() {
 
   // --- Start WiFi ---
   ESP_ERROR_CHECK(esp_wifi_start());
+  ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_NONE));
 
   // --- Check for saved credentials via ConfigManager ---
   std::string staSsid = ConfigManager::getInstance().getStaSsid();
@@ -74,7 +75,7 @@ void WifiManager::startAP() {
   std::strncpy(reinterpret_cast<char *>(ap_config.ap.password), apPass.c_str(), sizeof(ap_config.ap.password) - 1);
   ap_config.ap.ssid_len = static_cast<uint8_t>(apSsid.length());
   ap_config.ap.channel = 0;
-  ap_config.ap.max_connection = 4;
+  ap_config.ap.max_connection = 10;
   
   if (apPass.empty()) {
       ap_config.ap.authmode = WIFI_AUTH_OPEN;
