@@ -28,6 +28,17 @@ void WifiManager::init() {
   m_apNetif = esp_netif_create_default_wifi_ap();
   m_staNetif = esp_netif_create_default_wifi_sta();
 
+  // --- Ensure AP DHCP provides DNS immediately (Fallback to Google DNS) ---
+  // Fixes race condition where client connects before STA has router DNS
+  esp_netif_dhcps_stop(m_apNetif);
+  esp_netif_dns_info_t dns;
+  dns.ip.u_addr.ip4.addr = ipaddr_addr("8.8.8.8");
+  dns.ip.type = IPADDR_TYPE_V4;
+  uint8_t dhcps_offer_option = 1;
+  esp_netif_dhcps_option(m_apNetif, ESP_NETIF_OP_SET, ESP_NETIF_DOMAIN_NAME_SERVER, &dhcps_offer_option, sizeof(dhcps_offer_option));
+  esp_netif_set_dns_info(m_apNetif, ESP_NETIF_DNS_MAIN, &dns);
+  esp_netif_dhcps_start(m_apNetif);
+
   // --- WiFi init ---
   wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
   ESP_ERROR_CHECK(esp_wifi_init(&cfg));
@@ -212,7 +223,7 @@ void WifiManager::handleIpEvent(int32_t id, void *eventData) {
     }
 
     if (dns_found) {
-        uint8_t dhcps_offer_option = 0x02; // DHCPS_OFFER_DNS
+        uint8_t dhcps_offer_option = 1; // 1 = enable offering DNS
         esp_netif_dhcps_stop(m_apNetif);
         esp_netif_dhcps_option(m_apNetif, ESP_NETIF_OP_SET, ESP_NETIF_DOMAIN_NAME_SERVER, &dhcps_offer_option, sizeof(dhcps_offer_option));
         esp_netif_set_dns_info(m_apNetif, ESP_NETIF_DNS_MAIN, &dns);
