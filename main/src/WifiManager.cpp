@@ -73,7 +73,7 @@ void WifiManager::startAP() {
   std::strncpy(reinterpret_cast<char *>(ap_config.ap.ssid), apSsid.c_str(), sizeof(ap_config.ap.ssid) - 1);
   std::strncpy(reinterpret_cast<char *>(ap_config.ap.password), apPass.c_str(), sizeof(ap_config.ap.password) - 1);
   ap_config.ap.ssid_len = static_cast<uint8_t>(apSsid.length());
-  ap_config.ap.channel = 1;
+  ap_config.ap.channel = 0;
   ap_config.ap.max_connection = 4;
   
   if (apPass.empty()) {

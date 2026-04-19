@@ -5,6 +5,29 @@
 #include "esp_wifi.h"
 #include <vector>
 #include <algorithm>
+#include <cctype>
+
+static char from_hex(char ch) {
+    return isdigit((unsigned char)ch) ? ch - '0' : tolower((unsigned char)ch) - 'a' + 10;
+}
+
+static void urlDecode(std::string &str) {
+    std::string ret;
+    ret.reserve(str.length());
+    for (size_t i = 0; i < str.length(); ++i) {
+        if (str[i] == '%') {
+            if (i + 2 < str.length()) {
+                ret += (char)(from_hex(str[i+1]) << 4 | from_hex(str[i+2]));
+                i += 2;
+            }
+        } else if (str[i] == '+') {
+            ret += ' ';
+        } else {
+            ret += str[i];
+        }
+    }
+    str = ret;
+}
 
 // --- Static HTML Content ---
 // Embedded HTML for the Configuration Portal
@@ -155,8 +178,8 @@ esp_err_t WebServer::start() {
     }
 
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
-    // Reduce max URI tracking to save RAM
-    config.max_uri_handlers = 4;
+    // Allow up to 6 URIs (/, /scan, /status, /apply, /update)
+    config.max_uri_handlers = 6;
     config.stack_size = 4096;
 
     ESP_LOGI(TAG, "Starting HTTP Server on port: '%d'", config.server_port);
@@ -169,7 +192,7 @@ esp_err_t WebServer::start() {
             .handler  = getRootHandlerWrapper,
             .user_ctx = this
         };
-        httpd_register_uri_handler(m_server, &root_uri);
+        ESP_ERROR_CHECK(httpd_register_uri_handler(m_server, &root_uri));
 
         // Register GET /scan
         httpd_uri_t scan_uri = {
@@ -178,7 +201,7 @@ esp_err_t WebServer::start() {
             .handler  = getScanHandlerWrapper,
             .user_ctx = this
         };
-        httpd_register_uri_handler(m_server, &scan_uri);
+        ESP_ERROR_CHECK(httpd_register_uri_handler(m_server, &scan_uri));
 
         // Register GET /status
         httpd_uri_t status_uri = {
@@ -187,7 +210,7 @@ esp_err_t WebServer::start() {
             .handler  = getStatusHandlerWrapper,
             .user_ctx = this
         };
-        httpd_register_uri_handler(m_server, &status_uri);
+        ESP_ERROR_CHECK(httpd_register_uri_handler(m_server, &status_uri));
 
         // Register POST /apply
         httpd_uri_t apply_uri = {
@@ -196,7 +219,7 @@ esp_err_t WebServer::start() {
             .handler  = postApplyHandlerWrapper,
             .user_ctx = this
         };
-        httpd_register_uri_handler(m_server, &apply_uri);
+        ESP_ERROR_CHECK(httpd_register_uri_handler(m_server, &apply_uri));
 
         // Register POST /update (OTA)
         httpd_uri_t update_uri = {
@@ -205,7 +228,7 @@ esp_err_t WebServer::start() {
             .handler  = OtaUpdater::postUpdateHandler,
             .user_ctx = nullptr
         };
-        httpd_register_uri_handler(m_server, &update_uri);
+        ESP_ERROR_CHECK(httpd_register_uri_handler(m_server, &update_uri));
 
         ESP_LOGI(TAG, "HTTP Server handlers registered.");
     } else {
@@ -347,6 +370,7 @@ bool WebServer::extractQueryParam(const char* query, const char* key, std::strin
     esp_err_t err = httpd_query_key_value(query, key, value, sizeof(value));
     if (err == ESP_OK) {
         outValue = value;
+        urlDecode(outValue);
         return true;
     }
     return false;
